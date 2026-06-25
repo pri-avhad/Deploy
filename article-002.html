@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Cast-R1 reformulates time series forecasting as sequential decision-making. The implications for quant finance go further than the paper admits.">
+  <title>We've Been Building Forecasting Models Wrong — Salty Syntax</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .article-header {
+      padding: 64px 0 48px;
+      border-bottom: 1px solid var(--border);
+      max-width: var(--max-w);
+    }
+
+    .article-kicker {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 20px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .article-kicker::before {
+      content: '';
+      display: inline-block;
+      width: 24px;
+      height: 1px;
+      background: var(--cyan);
+    }
+
+    .article-header h1 {
+      font-family: var(--mono);
+      font-size: clamp(1.4rem, 3.5vw, 2.1rem);
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+
+    .article-header h1 em {
+      font-style: normal;
+      color: var(--blue);
+    }
+
+    .article-deck {
+      font-family: var(--sans);
+      font-size: 1.05rem;
+      color: var(--ink-mid);
+      line-height: 1.7;
+      margin-bottom: 28px;
+      border-left: 2px solid var(--border-mid);
+      padding-left: 20px;
+    }
+
+    .article-byline {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .byline-item {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--ink-dim);
+      letter-spacing: 0.08em;
+    }
+
+    .byline-label { display: block; margin-bottom: 2px; color: var(--ink-dim); }
+    .byline-value { color: var(--ink-mid); }
+
+    .article-tags-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .article-body {
+      padding: 48px 0;
+      max-width: var(--max-w);
+    }
+
+    .article-body p {
+      font-family: var(--sans);
+      font-size: 0.97rem;
+      color: var(--ink-mid);
+      line-height: 1.85;
+      margin-bottom: 1.3em;
+    }
+
+    .article-body h2 {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      margin: 52px 0 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .article-body strong { color: var(--ink); font-weight: 600; }
+
+    .data-callout {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--cyan);
+      padding: 20px 24px;
+      margin: 32px 0;
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      color: var(--ink-mid);
+      line-height: 1.7;
+    }
+
+    .data-callout strong { color: var(--ink); }
+
+    /* Paper ref block */
+    .paper-ref {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 20px 24px;
+      margin: 32px 0;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .paper-ref-label {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--blue);
+      white-space: nowrap;
+      padding-top: 2px;
+    }
+
+    .paper-ref-content { }
+
+    .paper-ref-title {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .paper-ref-meta {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--ink-dim);
+      margin-bottom: 8px;
+    }
+
+    .paper-ref-abstract {
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      color: var(--ink-mid);
+      line-height: 1.6;
+    }
+
+    .visual-wrap {
+      margin: 40px 0;
+      border: 1px solid var(--border);
+    }
+
+    .visual-caption {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      padding: 10px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--ink-dim);
+      letter-spacing: 0.08em;
+      margin: 40px 0 0;
+      transition: color 0.15s;
+    }
+
+    .back-link:hover { color: var(--blue); }
+
+    .next-article {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--cyan);
+      padding: 24px 28px;
+      margin-top: 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .next-article:hover { background: var(--surface2); }
+
+    .next-label {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      margin-bottom: 6px;
+    }
+
+    .next-title {
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .next-arrow {
+      font-family: var(--mono);
+      font-size: 1.4rem;
+      color: var(--blue);
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">salty<span class="accent">-</span>syntax<span class="cursor"></span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="articles.html" class="active">Articles</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="page">
+
+  <a href="articles.html" class="back-link">← All articles</a>
+
+  <header class="article-header">
+    <div class="article-kicker">Issue 002 &nbsp;·&nbsp; Paper Breakdown &nbsp;·&nbsp; Forecasting Architecture</div>
+    <h1>We've Been Building<br>Forecasting Models Wrong —<br><em>Cast-R1</em> and the Case for<br>Agentic Time Series</h1>
+    <p class="article-deck">
+      Every forecasting model in quant finance is built on a silent assumption: prediction is a single-pass problem. A February 2026 arXiv paper challenges that from first principles — and the implications go further than the paper admits.
+    </p>
+    <div class="article-byline">
+      <div class="byline-item">
+        <span class="byline-label">Published</span>
+        <span class="byline-value">March 2026</span>
+      </div>
+      <div class="byline-item">
+        <span class="byline-label">Reading time</span>
+        <span class="byline-value">~6 min</span>
+      </div>
+      <div class="byline-item">
+        <span class="byline-label">Paper</span>
+        <span class="byline-value">arXiv:2602.13802</span>
+      </div>
+    </div>
+    <div class="article-tags-row">
+      <span class="tag">LLMs</span>
+      <span class="tag">Forecasting</span>
+      <span class="tag">Architecture</span>
+      <span class="tag">Paper Breakdown</span>
+      <span class="tag">Quant ML</span>
+    </div>
+  </header>
+
+  <article class="article-body">
+
+    <p>There is an assumption so deep in quantitative finance that nobody states it out loud anymore. Every forecasting model — LSTM, Transformer, PatchTST, TimeMixer, N-BEATS — is built on the same premise: you feed in historical data, you get a forecast out. One pass. Done.</p>
+
+    <p>This is so obvious it seems like physics. Of course forecasting is a single-pass problem. What else would it be?</p>
+
+    <p>A paper published in February 2026 by researchers at the University of Science and Technology of China argues, carefully and with evidence, that this framing is wrong. Not slightly off — structurally wrong. And once you see the argument, it's hard to unsee it.</p>
+
+    <!-- PAPER REF BLOCK -->
+    <div class="paper-ref">
+      <div class="paper-ref-label">// Paper</div>
+      <div class="paper-ref-content">
+        <div class="paper-ref-title">Cast-R1: Learning Tool-Augmented Sequential Decision Policies for Time Series Forecasting</div>
+        <div class="paper-ref-meta">Tao, Cheng, Jiang, Gao, Zhang, Liu &nbsp;·&nbsp; arXiv:2602.13802 &nbsp;·&nbsp; February 14, 2026 &nbsp;·&nbsp; <a href="https://arxiv.org/abs/2602.13802" target="_blank" rel="noopener">arxiv.org/abs/2602.13802</a></div>
+        <p class="paper-ref-abstract">
+          Reformulates time series forecasting as a sequential decision-making problem. Introduces memory-based state management and a tool-augmented agentic workflow in which an agent autonomously interacts with a modular forecasting toolkit. Trained via supervised fine-tuning followed by multi-turn reinforcement learning.
+        </p>
+      </div>
+    </div>
+
+    <h2>// The argument</h2>
+
+    <p>The paper opens with an observation that any experienced quant will recognise immediately: expert forecasters don't actually forecast in one shot.</p>
+
+    <p>They examine historical patterns. They characterise the data — trend, seasonality, regime. They select a model, check residuals, identify anomalies, pull in contextual information, and revise. When new evidence surfaces, they update the forecast. This is iterative, evidence-driven, and deeply sequential. It looks nothing like the forward pass of a neural network.</p>
+
+    <div class="data-callout">
+      The paper's core claim: <strong>"High-quality forecasting involves a series of interdependent decisions rather than a one-shot model inference."</strong> Cast-R1 proposes to learn this entire decision process — not just the mapping from input to output — as a trainable system.
+    </div>
+
+    <p>Cast-R1 operationalises this through three components:</p>
+
+    <p><strong>Memory-based state management.</strong> The system maintains a running state across decision steps, accumulating contextual evidence — data quality assessments, structural characterisations, anomaly flags, model outputs — rather than discarding intermediate reasoning between steps.</p>
+
+    <p><strong>A modular forecasting toolkit.</strong> Rather than a single model, Cast-R1 has access to a set of callable tools: data quality assessment, global statistical characterisation, structural and dynamic analysis, event-level summarisation, residual diagnostics, and model invocation. The agent decides which tools to call, in what order, and how to synthesise their outputs.</p>
+
+    <p><strong>Two-stage training.</strong> First, supervised fine-tuning on expert forecasting trajectories — the sequence of decisions a good analyst would make. Then multi-turn reinforcement learning, where the agent optimises the full decision sequence against forecasting accuracy.</p>
+
+    <!-- VISUAL 1: Single-pass vs Sequential -->
+    <div class="visual-wrap">
+      <div class="visual-caption">Fig 1 — Single-Pass vs Sequential Forecasting Paradigm</div>
+      <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg">
+        <rect width="680" height="300" fill="#F8F7F4"/>
+
+        <!-- LEFT: Old paradigm -->
+        <text x="170" y="28" font-family="JetBrains Mono,monospace" font-size="9" fill="#8A94A0" text-anchor="middle" letter-spacing="1">CURRENT PARADIGM</text>
+
+        <!-- Input box -->
+        <rect x="60" y="42" width="220" height="44" fill="#FFFFFF" rx="2" stroke="#D6D1C9" stroke-width="1"/>
+        <text x="170" y="60" font-family="JetBrains Mono,monospace" font-size="10" fill="#4A5568" text-anchor="middle">Historical Data</text>
+        <text x="170" y="76" font-family="Inter,sans-serif" font-size="9" fill="#8A94A0" text-anchor="middle">T–N … T–1 observations</text>
+
+        <!-- Arrow down -->
+        <line x1="170" y1="86" x2="170" y2="110" stroke="#D6D1C9" stroke-width="1.5"/>
+        <polygon points="164,108 176,108 170,116" fill="#D6D1C9"/>
+
+        <!-- Model box -->
+        <rect x="60" y="116" width="220" height="44" fill="#FFFFFF" rx="2" stroke="#D6D1C9" stroke-width="1"/>
+        <text x="170" y="134" font-family="JetBrains Mono,monospace" font-size="10" fill="#4A5568" text-anchor="middle">Model (single pass)</text>
+        <text x="170" y="150" font-family="Inter,sans-serif" font-size="9" fill="#8A94A0" text-anchor="middle">Transformer / LSTM / etc.</text>
+
+        <!-- Arrow down -->
+        <line x1="170" y1="160" x2="170" y2="184" stroke="#D6D1C9" stroke-width="1.5"/>
+        <polygon points="164,182 176,182 170,190" fill="#D6D1C9"/>
+
+        <!-- Output box -->
+        <rect x="60" y="190" width="220" height="44" fill="#FFFFFF" rx="2" stroke="#D6D1C9" stroke-width="1"/>
+        <text x="170" y="208" font-family="JetBrains Mono,monospace" font-size="10" fill="#4A5568" text-anchor="middle">Forecast</text>
+        <text x="170" y="224" font-family="Inter,sans-serif" font-size="9" fill="#8A94A0" text-anchor="middle">T+1 … T+H values</text>
+
+        <!-- Label -->
+        <text x="170" y="260" font-family="JetBrains Mono,monospace" font-size="8" fill="#8A94A0" text-anchor="middle">Fixed mapping. No revision. No context.</text>
+
+        <!-- Divider -->
+        <line x1="340" y1="20" x2="340" y2="280" stroke="#D6D1C9" stroke-width="1" stroke-dasharray="4,4"/>
+
+        <!-- RIGHT: Cast-R1 paradigm -->
+        <text x="510" y="28" font-family="JetBrains Mono,monospace" font-size="9" fill="#2563A8" text-anchor="middle" letter-spacing="1">CAST-R1 PARADIGM</text>
+
+        <!-- State box -->
+        <rect x="360" y="42" width="280" height="36" fill="#FFFFFF" rx="2" stroke="#2563A8" stroke-width="1" opacity="0.7"/>
+        <text x="500" y="57" font-family="JetBrains Mono,monospace" font-size="9" fill="#2563A8" text-anchor="middle">Memory State (accumulates evidence)</text>
+        <text x="500" y="70" font-family="Inter,sans-serif" font-size="8" fill="#8A94A0" text-anchor="middle">persists across all decision steps</text>
+
+        <!-- Step 1 -->
+        <rect x="360" y="96" width="120" height="36" fill="#FFFFFF" rx="2" stroke="#D6D1C9" stroke-width="1"/>
+        <text x="420" y="111" font-family="JetBrains Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle">Data Quality</text>
+        <text x="420" y="124" font-family="Inter,sans-serif" font-size="8" fill="#8A94A0" text-anchor="middle">Assess + flag</text>
+
+        <!-- Step 2 -->
+        <rect x="520" y="96" width="120" height="36" fill="#FFFFFF" rx="2" stroke="#D6D1C9" stroke-width="1"/>
+        <text x="580" y="111" font-family="JetBrains Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle">Structural</text>
+        <text x="580" y="124" font-family="Inter,sans-serif" font-size="8" fill="#8A94A0" text-anchor="middle">Trend / regime</text>
+
+        <!-- Step 3 -->
+        <rect x="360" y="152" width="120" height="36" fill="#FFFFFF" rx="2" stroke="#D6D1C9" stroke-width="1"/>
+        <text x="420" y="167" font-family="JetBrains Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle">Model Select</text>
+        <text x="420" y="180" font-family="Inter,sans-serif" font-size="8" fill="#8A94A0" text-anchor="middle">Choose + invoke</text>
+
+        <!-- Step 4 -->
+        <rect x="520" y="152" width="120" height="36" fill="#FFFFFF" rx="2" stroke="#D6D1C9" stroke-width="1"/>
+        <text x="580" y="167" font-family="JetBrains Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle">Residual Check</text>
+        <text x="580" y="180" font-family="Inter,sans-serif" font-size="8" fill="#8A94A0" text-anchor="middle">Diagnose + revise</text>
+
+        <!-- Arrows between steps -->
+        <line x1="480" y1="114" x2="520" y2="114" stroke="#D6D1C9" stroke-width="1"/>
+        <polygon points="518,110 526,114 518,118" fill="#D6D1C9"/>
+        <line x1="420" y1="132" x2="420" y2="152" stroke="#D6D1C9" stroke-width="1"/>
+        <polygon points="416,150 424,150 420,158" fill="#D6D1C9"/>
+        <line x1="580" y1="132" x2="580" y2="152" stroke="#D6D1C9" stroke-width="1"/>
+        <polygon points="576,150 584,150 580,158" fill="#D6D1C9"/>
+        <line x1="480" y1="170" x2="520" y2="170" stroke="#D6D1C9" stroke-width="1"/>
+        <polygon points="518,166 526,170 518,174" fill="#D6D1C9"/>
+
+        <!-- Final output -->
+        <rect x="410" y="208" width="180" height="36" fill="#FFFFFF" rx="2" stroke="#2563A8" stroke-width="1"/>
+        <text x="500" y="223" font-family="JetBrains Mono,monospace" font-size="9" fill="#2563A8" text-anchor="middle">Revised Forecast</text>
+        <text x="500" y="236" font-family="Inter,sans-serif" font-size="8" fill="#8A94A0" text-anchor="middle">Evidence-grounded, iterable</text>
+
+        <!-- Arrows to final -->
+        <line x1="420" y1="188" x2="460" y2="208" stroke="#D6D1C9" stroke-width="1"/>
+        <line x1="580" y1="188" x2="540" y2="208" stroke="#D6D1C9" stroke-width="1"/>
+
+        <!-- Memory arrow back up -->
+        <path d="M640,226 Q660,226 660,114 Q660,78 640,78" stroke="#2563A8" stroke-width="1" fill="none" stroke-dasharray="3,3" opacity="0.4"/>
+        <polygon points="638,74 646,78 638,82" fill="#2563A8" opacity="0.4"/>
+
+        <text x="500" y="265" font-family="JetBrains Mono,monospace" font-size="8" fill="#8A94A0" text-anchor="middle">Sequential decisions. Evidence accumulates. Forecast revises.</text>
+      </svg>
+    </div>
+
+    <h2>// Why this matters more for finance than general time series</h2>
+
+    <p>The paper is written for general time series forecasting. But the argument lands harder in finance than anywhere else, for a specific reason: financial time series are not stationary, not Gaussian, and not generated by a fixed process.</p>
+
+    <p>Regime changes — from low-volatility trending markets to high-volatility mean-reverting ones — are abrupt and unpredictable. Events like central bank announcements, earnings surprises, or geopolitical shocks create discontinuities that no look-back window fully captures. A single-pass model trained on historical data has no mechanism to detect that the regime has changed mid-forecast and update accordingly. A sequential agent does.</p>
+
+    <p>This matters most in macro and fixed income, where regime shifts are more frequent and more consequential than in equity momentum strategies. A global macro fund running a single-pass LSTM on yield curve dynamics is implicitly assuming the data-generating process is stable enough that one look at the history tells you everything. It rarely is.</p>
+
+    <h2>// What the paper actually shows</h2>
+
+    <!-- VISUAL 2: Toolkit -->
+    <div class="visual-wrap">
+      <div class="visual-caption">Fig 2 — Cast-R1 Modular Forecasting Toolkit</div>
+      <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg">
+        <rect width="680" height="200" fill="#F8F7F4"/>
+
+        <!-- Agent in centre -->
+        <rect x="270" y="70" width="140" height="60" fill="#FFFFFF" rx="3" stroke="#2563A8" stroke-width="1.5"/>
+        <text x="340" y="94" font-family="JetBrains Mono,monospace" font-size="10" fill="#2563A8" text-anchor="middle" font-weight="700">Cast-R1</text>
+        <text x="340" y="110" font-family="JetBrains Mono,monospace" font-size="8" fill="#8A94A0" text-anchor="middle">Agentic Controller</text>
+        <text x="340" y="122" font-family="Inter,sans-serif" font-size="8" fill="#8A94A0" text-anchor="middle">memory · policy · RL-trained</text>
+
+        <!-- Tool 1 -->
+        <rect x="18" y="20" width="130" height="36" fill="#FFFFFF" rx="2" stroke="#D6D1C9" stroke-width="1"/>
+        <text x="83" y="35" font-family="JetBrains Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle">Data Quality</text>
+        <text x="83" y="49" font-family="Inter,sans-serif" font-size="8" fill="#8A94A0" text-anchor="middle">Missing values · outliers</text>
+        <line x1="148" y1="38" x2="270" y2="90" stroke="#D6D1C9" stroke-width="1"/>
+
+        <!-- Tool 2 -->
+        <rect x="18" y="80" width="130" height="36" fill="#FFFFFF" rx="2" stroke="#D6D1C9" stroke-width="1"/>
+        <text x="83" y="95" font-family="JetBrains Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle">Statistical Profile</text>
+        <text x="83" y="109" font-family="Inter,sans-serif" font-size="8" fill="#8A94A0" text-anchor="middle">Trend · seasonality · ACF</text>
+        <line x1="148" y1="98" x2="270" y2="100" stroke="#D6D1C9" stroke-width="1"/>
+
+        <!-- Tool 3 -->
+        <rect x="18" y="140" width="130" height="36" fill="#FFFFFF" rx="2" stroke="#D6D1C9" stroke-width="1"/>
+        <text x="83" y="155" font-family="JetBrains Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle">Event Summariser</text>
+        <text x="83" y="169" font-family="Inter,sans-serif" font-size="8" fill="#8A94A0" text-anchor="middle">Context injection</text>
+        <line x1="148" y1="158" x2="270" y2="115" stroke="#D6D1C9" stroke-width="1"/>
+
+        <!-- Tool 4 -->
+        <rect x="532" y="20" width="130" height="36" fill="#FFFFFF" rx="2" stroke="#D6D1C9" stroke-width="1"/>
+        <text x="597" y="35" font-family="JetBrains Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle">Model Invoke</text>
+        <text x="597" y="49" font-family="Inter,sans-serif" font-size="8" fill="#8A94A0" text-anchor="middle">Select + call forecaster</text>
+        <line x1="532" y1="38" x2="410" y2="90" stroke="#D6D1C9" stroke-width="1"/>
+
+        <!-- Tool 5 -->
+        <rect x="532" y="80" width="130" height="36" fill="#FFFFFF" rx="2" stroke="#D6D1C9" stroke-width="1"/>
+        <text x="597" y="95" font-family="JetBrains Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle">Residual Diagnostics</text>
+        <text x="597" y="109" font-family="Inter,sans-serif" font-size="8" fill="#8A94A0" text-anchor="middle">Error patterns · revision</text>
+        <line x1="532" y1="98" x2="410" y2="100" stroke="#D6D1C9" stroke-width="1"/>
+
+        <!-- Tool 6 -->
+        <rect x="532" y="140" width="130" height="36" fill="#FFFFFF" rx="2" stroke="#D6D1C9" stroke-width="1"/>
+        <text x="597" y="155" font-family="JetBrains Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle">Structural Analysis</text>
+        <text x="597" y="169" font-family="Inter,sans-serif" font-size="8" fill="#8A94A0" text-anchor="middle">Regime · change points</text>
+        <line x1="532" y1="158" x2="410" y2="115" stroke="#D6D1C9" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <p>The experimental results show Cast-R1 outperforming single-pass baselines across standard time series benchmarks. But the more interesting finding is qualitative: the agent learns to use the toolkit in ways the researchers didn't explicitly program. It discovers, through reinforcement learning, that running residual diagnostics before invoking a second model improves outcomes. It learns when to skip tools that add noise rather than signal.</p>
+
+    <p>This is the part that should interest quant practitioners. The model isn't just better at forecasting — it's learning something about the process of forecasting. That's a fundamentally different thing to optimise.</p>
+
+    <h2>// The honest critique</h2>
+
+    <p>The paper has real limitations that deserve naming.</p>
+
+    <p><strong>The benchmarks are general, not financial.</strong> Cast-R1 is evaluated on ETTh1, ETTm1, Weather, and similar standard datasets. These are well-behaved compared to financial time series. No fat tails, no regime switches, no adversarial microstructure. Whether the agentic loop adds value when the data-generating process is genuinely adversarial remains untested.</p>
+
+    <p><strong>The toolkit is fixed at training time.</strong> The agent learns which tools to call, but it can't extend the toolkit at inference. In production finance, you often need to pull in a new data source or apply a model that didn't exist when the system was trained. A truly adaptive system needs dynamic tool registration — not solved here.</p>
+
+    <p><strong>Latency is unstated.</strong> Multi-step agentic loops are slower than single-pass inference. For daily or weekly macro forecasting this doesn't matter. For anything closer to the close of a trading session, it might.</p>
+
+    <p><strong>Explainability is a byproduct, not a design goal.</strong> The sequential decision trace gives you something to audit — which tools were called, what the intermediate state looked like — but the paper doesn't frame this as an explainability contribution. In regulated environments, this could actually be the most valuable property of the architecture. It's an opportunity the paper misses.</p>
+
+    <h2>// The broader claim I'd make</h2>
+
+    <p>The quant community has spent thirty years optimising model architectures — better attention mechanisms, better positional encodings, better training objectives. Cast-R1 suggests we've been optimising the wrong thing. The architecture of the model matters less than the architecture of the decision process around it.</p>
+
+    <p>This is not a small claim. It means that the right frontier for research isn't "a better transformer for financial time series" — it's "a better protocol for how a system gathers evidence and revises its forecast." The Cast-R1 framework is an early stab at formalising that protocol.</p>
+
+    <p>The finance-specific version of this idea — an agentic forecasting system with access to macro data feeds, event calendars, central bank communications, and real-time residual monitoring — is not science fiction. It's an engineering problem. And it's more tractable than the next 2% of improvement on a benchmark model.</p>
+
+    <hr class="divider">
+
+    <div class="refs">
+      <h3>// References</h3>
+      <ul>
+        <li><a href="https://arxiv.org/abs/2602.13802" target="_blank" rel="noopener">Tao et al. — Cast-R1: Learning Tool-Augmented Sequential Decision Policies for Time Series Forecasting · arXiv:2602.13802 · Feb 2026</a></li>
+        <li><a href="https://arxiv.org/abs/2602.01776" target="_blank" rel="noopener">Cheng et al. — Position: Beyond Model-Centric Prediction — Agentic Time Series Forecasting · arXiv:2602.01776 · Feb 2026</a></li>
+        <li><a href="https://arxiv.org/abs/2408.09960" target="_blank" rel="noopener">Oliveira et al. — Causality-Inspired Models for Financial Time Series Forecasting · arXiv:2408.09960 · Aug 2024</a></li>
+        <li><a href="https://arxiv.org/abs/2412.20138" target="_blank" rel="noopener">Xiao et al. — TradingAgents: Multi-Agents LLM Financial Trading Framework · arXiv:2412.20138 · Dec 2024</a></li>
+        <li><a href="https://github.com/Xiaoyu-Tao/Cast-R1-TS" target="_blank" rel="noopener">Cast-R1 GitHub Repository — Xiaoyu-Tao/Cast-R1-TS</a></li>
+        <li><a href="https://arxiv.org/abs/2605.14389" target="_blank" rel="noopener">KairosAgent: Agentic Time Series Forecasting with Fused Semantic Reasoning · arXiv:2605.14389 · May 2026</a></li>
+      </ul>
+    </div>
+
+    <div class="disclaimer">
+      Research notes on a public paper. All sources linked.
+    </div>
+
+    <!-- NEXT ARTICLE -->
+    <a href="article-001.html" class="next-article">
+      <div>
+        <div class="next-label">← Previous article</div>
+        <div class="next-title">Everyone Is Chasing Alpha. The Real AI Opportunity Is Keeping You Out of Jail.</div>
+      </div>
+      <div class="next-arrow">←</div>
+    </a>
+
+  </article>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span class="footer-copy">© 2026 salty-syntax.com</span>
+    <div class="footer-links">
+      <a href="articles.html">Articles</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>

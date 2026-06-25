@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Salty Syntax — Notes on AI architecture, compliance systems, and what the papers don't tell you.">
+  <title>Salty Syntax</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .hero {
+      padding: 80px 0 64px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero-kicker {
+      font-family: var(--mono);
+      font-size: 0.67rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 28px;
+    }
+
+    .hero h1 {
+      font-family: var(--mono);
+      font-size: clamp(1.9rem, 4.5vw, 2.8rem);
+      font-weight: 700;
+      line-height: 1.18;
+      color: var(--ink);
+      margin-bottom: 20px;
+      letter-spacing: -0.03em;
+    }
+
+    .hero-sub {
+      font-family: var(--sans);
+      font-size: 1.05rem;
+      color: var(--ink-mid);
+      max-width: 520px;
+      line-height: 1.75;
+      font-weight: 300;
+    }
+
+    .ticker-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--blue);
+      padding: 13px 20px;
+      margin: 44px 0 0;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--ink-mid);
+    }
+
+    .ticker-prompt { color: var(--blue); flex-shrink: 0; }
+    .ticker-wrap a { color: var(--ink); font-weight: 500; }
+    .ticker-date { color: var(--ink-dim); margin-left: 4px; }
+
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 52px 0 0;
+      margin-bottom: 1px;
+    }
+
+    .section-title {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--ink);
+      flex: 1;
+    }
+
+    .section-link {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      color: var(--blue);
+      padding-bottom: 12px;
+      border-bottom: 2px solid transparent;
+      margin-left: 24px;
+      background: none;
+    }
+
+    .section-link:hover { background: none; color: var(--blue-dim); }
+
+    .featured-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: none;
+      padding: 28px 32px;
+      display: block;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background-image: none;
+    }
+
+    .featured-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--blue);
+      transform: scaleY(0);
+      transform-origin: bottom;
+      transition: transform 0.25s ease;
+    }
+
+    .featured-card:hover {
+      border-color: var(--border-mid);
+      box-shadow: 0 2px 16px rgba(28,43,58,0.07);
+      color: var(--ink);
+      background: none;
+      background-color: var(--surface);
+    }
+
+    .featured-card:hover::before { transform: scaleY(1); }
+    .featured-card + .featured-card { border-top: 1px solid var(--border); margin-top: 1px; }
+
+    .featured-tag-row { display: flex; gap: 6px; margin-bottom: 14px; }
+
+    .featured-card h2 {
+      font-family: var(--mono);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.32;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .featured-card p {
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      color: var(--ink-mid);
+      line-height: 1.7;
+      margin-bottom: 18px;
+      font-weight: 300;
+    }
+
+    .featured-meta {
+      font-family: var(--mono);
+      font-size: 0.63rem;
+      color: var(--ink-dim);
+      letter-spacing: 0.07em;
+      display: flex;
+      gap: 18px;
+    }
+
+    .about-strip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 28px 32px;
+      margin: 48px 0;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .about-strip p {
+      font-family: var(--sans);
+      font-size: 0.88rem;
+      color: var(--ink-mid);
+      line-height: 1.72;
+      font-weight: 300;
+    }
+
+    .btn {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--surface);
+      background: var(--ink);
+      padding: 10px 20px;
+      white-space: nowrap;
+      transition: background 0.18s;
+      background-image: none;
+    }
+
+    .btn:hover { background: var(--blue); color: var(--surface); background-image: none; }
+
+    .topics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      margin: 0 0 48px;
+    }
+
+    .topic-cell {
+      background: var(--surface);
+      padding: 24px 22px;
+      transition: background 0.15s;
+    }
+
+    .topic-cell:hover { background: var(--blue-pale); }
+
+    .topic-icon {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--blue);
+      margin-bottom: 10px;
+      letter-spacing: 0.1em;
+    }
+
+    .topic-name {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 7px;
+      letter-spacing: -0.01em;
+    }
+
+    .topic-desc {
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      color: var(--ink-mid);
+      line-height: 1.55;
+      font-weight: 300;
+    }
+
+    @media (max-width: 600px) {
+      .topics-grid { grid-template-columns: 1fr; }
+      .about-strip { grid-template-columns: 1fr; }
+      .hero { padding: 48px 0 40px; }
+      .section-head { flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">salty<span class="accent">-</span>syntax<span class="cursor"></span></a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="articles.html">Articles</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="page">
+  <section class="hero reveal">
+    <div class="hero-kicker">// Machine learning × production systems</div>
+    <h1>Notes on AI architecture, compliance systems, and what the papers don't tell you.</h1>
+    <div class="ticker-wrap">
+      <span class="ticker-prompt">&gt;_</span>
+      Latest:&nbsp;<a href="article-002.html">We've Been Building Forecasting Models Wrong — Cast-R1 and the Case for Agentic Time Series</a>
+      <span class="ticker-date">Mar 2026</span>
+    </div>
+  </section>
+
+  <div class="section-head reveal">
+    <span class="section-title">// Featured</span>
+    <a href="articles.html" class="section-link">All articles →</a>
+  </div>
+
+  <a href="article-002.html" class="featured-card reveal">
+    <div class="featured-tag-row">
+      <span class="tag">LLMs</span>
+      <span class="tag">Forecasting</span>
+      <span class="tag">Paper Breakdown</span>
+    </div>
+    <h2>We've Been Building Forecasting Models Wrong — Cast-R1 and the Case for Agentic Time Series</h2>
+    <p>Every forecasting model in quant finance assumes prediction is a single-pass problem. A February 2026 arXiv paper challenges that from first principles — and the implications go further than the paper admits.</p>
+    <div class="featured-meta">
+      <span>Mar 2026</span>
+      <span>~900 words</span>
+      <span>Issue 002</span>
+    </div>
+  </a>
+
+  <a href="article-001.html" class="featured-card reveal" style="opacity:0.85;">
+    <div class="featured-tag-row">
+      <span class="tag">Compliance</span>
+      <span class="tag">AI Systems</span>
+      <span class="tag">AML</span>
+    </div>
+    <h2>Everyone Is Chasing Alpha. The Real AI Opportunity in Finance Is Keeping You Out of Jail.</h2>
+    <p>Why compliance and risk are the most underinvested, highest-leverage AI problem in global markets — and what the stack should actually look like.</p>
+    <div class="featured-meta">
+      <span>Feb 2026</span>
+      <span>~1,200 words</span>
+      <span>Issue 001</span>
+    </div>
+  </a>
+
+  <div class="section-head reveal" style="margin-top:48px;">
+    <span class="section-title">// Coverage areas</span>
+  </div>
+
+  <div class="topics-grid reveal">
+    <div class="topic-cell">
+      <div class="topic-icon">// LLMs</div>
+      <div class="topic-name">LLMs for Finance</div>
+      <p class="topic-desc">Alpha generation, earnings NLP, RAG on regulatory text, and where language models actually move the needle.</p>
+    </div>
+    <div class="topic-cell">
+      <div class="topic-icon">// Compliance</div>
+      <div class="topic-name">Compliance & Risk AI</div>
+      <p class="topic-desc">AML, surveillance, KYC, explainability — the unglamorous stack that has more AI upside than trading.</p>
+    </div>
+    <div class="topic-cell">
+      <div class="topic-icon">// Quant ML</div>
+      <div class="topic-name">Quant ML Systems</div>
+      <p class="topic-desc">Time series forecasting, GNNs for transaction networks, reinforcement learning, and agentic pipelines.</p>
+    </div>
+  </div>
+
+  <div class="about-strip reveal">
+    <p>Notes on AI systems, financial infrastructure, and the gap between what research papers claim and what production deployments actually look like.</p>
+    <a href="about.html" class="btn">About →</a>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span class="footer-copy">© 2026 salty-syntax.com</span>
+    <div class="footer-links">
+      <a href="articles.html">Articles</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
